@@ -1,0 +1,9 @@
+-- CreateTable
+CREATE TABLE "Disc" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "title" TEXT NOT NULL,
+    "artist" TEXT NOT NULL,
+    "genre" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
