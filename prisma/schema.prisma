@@ -10,11 +10,53 @@ datasource db {
   provider = "sqlite"
 }
 
-model Disc {
-  id        Int      @id @default(autoincrement())
-  title     String
-  artist    String
-  genre     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Band {
+  Id                             Int      @id @default(autoincrement())
+  es_id                          String
+  name                           String
+  origin                         String
+  officialWebsite                String
+  rockAndRollHallOfFameInduction Int
+  albums                         Album[]
+  songs                          Song[]
+  artists                        Artist[]
+}
+
+model Album {
+  Id            Int    @id @default(autoincrement())
+  BandId        Int
+  title         String
+  year          Int
+  lengthMinutes String
+  band          Band   @relation(fields: [BandId], references: [Id])
+  songs         Song[]
+}
+
+model Song {
+  Id          Int     @id @default(autoincrement())
+  title       String
+  year        Int
+  albumId     Int
+  achievement String
+  hit         Boolean
+  BandId      Int
+  album       Album   @relation(fields: [albumId], references: [Id])
+  band        Band    @relation(fields: [BandId], references: [Id])
+}
+
+model Artist {
+  Id               Int        @id @default(autoincrement())
+  name             String
+  birthdate        DateTime
+  BandId           Int
+  mainInstrumentId Int
+  band             Band       @relation(fields: [BandId], references: [Id])
+  mainInstrument   Instrument @relation(fields: [mainInstrumentId], references: [Id])
+}
+
+model Instrument {
+  Id      Int      @id @default(autoincrement())
+  name    String
+  Type    String
+  artists Artist[]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "Instrument" ADD COLUMN "Type" TEXT NOT NULL DEFAULT '';

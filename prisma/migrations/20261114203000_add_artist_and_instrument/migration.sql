@@ -1,0 +1,14 @@
+CREATE TABLE "Instrument" (
+    "Id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT NOT NULL
+);
+
+CREATE TABLE "Artist" (
+    "Id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT NOT NULL,
+    "birthdate" DATETIME NOT NULL,
+    "BandId" INTEGER NOT NULL,
+    "mainInstrumentId" INTEGER NOT NULL,
+    CONSTRAINT "Artist_BandId_fkey" FOREIGN KEY ("BandId") REFERENCES "Band" ("Id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Artist_mainInstrumentId_fkey" FOREIGN KEY ("mainInstrumentId") REFERENCES "Instrument" ("Id") ON DELETE RESTRICT ON UPDATE CASCADE
+);

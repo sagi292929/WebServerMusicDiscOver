@@ -1,0 +1,31 @@
+DROP TABLE "Disc";
+
+CREATE TABLE "Band" (
+    "Id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "es_id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "origin" TEXT NOT NULL,
+    "officialWebsite" TEXT NOT NULL,
+    "rockAndRollHallOfFameInduction" INTEGER NOT NULL
+);
+
+CREATE TABLE "Album" (
+    "Id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "BandId" INTEGER NOT NULL,
+    "title" TEXT NOT NULL,
+    "year" INTEGER NOT NULL,
+    "lengthMinutes" TEXT NOT NULL,
+    CONSTRAINT "Album_BandId_fkey" FOREIGN KEY ("BandId") REFERENCES "Band" ("Id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "Song" (
+    "Id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "title" TEXT NOT NULL,
+    "year" INTEGER NOT NULL,
+    "albumId" INTEGER NOT NULL,
+    "achievement" TEXT NOT NULL,
+    "hit" BOOLEAN NOT NULL,
+    "BandId" INTEGER NOT NULL,
+    CONSTRAINT "Song_albumId_fkey" FOREIGN KEY ("albumId") REFERENCES "Album" ("Id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Song_BandId_fkey" FOREIGN KEY ("BandId") REFERENCES "Band" ("Id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
