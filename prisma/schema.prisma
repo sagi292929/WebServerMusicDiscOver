@@ -16,7 +16,7 @@ model Band {
   name                           String
   origin                         String
   officialWebsite                String
-  rockAndRollHallOfFameInduction Int
+  rockAndRollHallOfFameInduction Int?
   albums                         Album[]
   songs                          Song[]
   artists                        Artist[]
