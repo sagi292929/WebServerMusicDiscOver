@@ -18,45 +18,73 @@ model Band {
   officialWebsite                String
   rockAndRollHallOfFameInduction Int?
   albums                         Album[]
-  songs                          Song[]
   artists                        Artist[]
 }
 
 model Album {
-  Id            Int    @id @default(autoincrement())
+  Id            Int           @id @default(autoincrement())
   BandId        Int
   title         String
   year          Int
   lengthMinutes String
-  band          Band   @relation(fields: [BandId], references: [Id])
-  songs         Song[]
+  band          Band          @relation(fields: [BandId], references: [Id])
+  albumSongs    AlbumSong[]
+  albumArtists  AlbumArtist[]
 }
 
 model Song {
-  Id          Int     @id @default(autoincrement())
+  Id          Int         @id @default(autoincrement())
   title       String
   year        Int
-  albumId     Int
   achievement String
   hit         Boolean
-  BandId      Int
-  album       Album   @relation(fields: [albumId], references: [Id])
-  band        Band    @relation(fields: [BandId], references: [Id])
+  albumSongs  AlbumSong[]
+}
+
+model AlbumSong {
+  albumId     Int   @map("album_id")
+  songId      Int   @map("song_id")
+  trackNumber Int   @map("track_number")
+  album       Album @relation(fields: [albumId], references: [Id], onDelete: Cascade)
+  song        Song  @relation(fields: [songId], references: [Id], onDelete: Cascade)
+
+  @@id([albumId, songId])
+  @@map("album_songs")
 }
 
 model Artist {
-  Id               Int        @id @default(autoincrement())
-  name             String
-  birthdate        DateTime
-  BandId           Int
-  mainInstrumentId Int
-  band             Band       @relation(fields: [BandId], references: [Id])
-  mainInstrument   Instrument @relation(fields: [mainInstrumentId], references: [Id])
+  Id                Int                @id @default(autoincrement())
+  name              String
+  birthdate         DateTime
+  BandId            Int
+  band              Band               @relation(fields: [BandId], references: [Id])
+  albumArtists      AlbumArtist[]
+  artistInstruments ArtistInstrument[]
+}
+
+model AlbumArtist {
+  albumId  Int    @map("album_id")
+  artistId Int    @map("artist_id")
+  album    Album  @relation(fields: [albumId], references: [Id], onDelete: Cascade)
+  artist   Artist @relation(fields: [artistId], references: [Id], onDelete: Cascade)
+
+  @@id([albumId, artistId])
+  @@map("album_artists")
 }
 
 model Instrument {
-  Id      Int      @id @default(autoincrement())
-  name    String
-  Type    String
-  artists Artist[]
+  Id                Int                @id @default(autoincrement())
+  name              String
+  Type              String
+  artistInstruments ArtistInstrument[]
+}
+
+model ArtistInstrument {
+  artistId     Int        @map("artist_id")
+  instrumentId Int        @map("instrument_id")
+  artist       Artist     @relation(fields: [artistId], references: [Id], onDelete: Cascade)
+  instrument   Instrument @relation(fields: [instrumentId], references: [Id], onDelete: Cascade)
+
+  @@id([artistId, instrumentId])
+  @@map("artist_instruments")
 }
