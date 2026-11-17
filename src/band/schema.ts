@@ -40,8 +40,136 @@ export const typeDefs = `#graphql
     inserted_at: String
   }
 
+  type SQLSong {
+    Id: Int!
+    title: String!
+    year: Int!
+    achievement: String!
+    hit: Boolean!
+  }
+
+  type SQLInstrument {
+    Id: Int!
+    name: String!
+    Type: String!
+  }
+
+  type SQLArtistInstrument {
+    artistId: Int!
+    instrumentId: Int!
+    instrument: SQLInstrument!
+  }
+
+  type SQLArtist {
+    Id: Int!
+    name: String!
+    birthdate: String!
+    BandId: Int!
+    artistInstruments: [SQLArtistInstrument!]!
+  }
+
+  type SQLAlbumSong {
+    albumId: Int!
+    songId: Int!
+    trackNumber: Int!
+    song: SQLSong!
+  }
+
+  type SQLAlbumArtist {
+    albumId: Int!
+    artistId: Int!
+    artist: SQLArtist!
+  }
+
+  type SQLAlbum {
+    Id: Int!
+    BandId: Int!
+    title: String!
+    year: Int!
+    lengthMinutes: String!
+    albumSongs: [SQLAlbumSong!]!
+    albumArtists: [SQLAlbumArtist!]!
+  }
+
+  type SQLBand {
+    Id: Int!
+    es_id: String!
+    name: String!
+    origin: String!
+    officialWebsite: String!
+    rockAndRollHallOfFameInduction: Int
+    albums: [SQLAlbum!]!
+    artists: [SQLArtist!]!
+  }
+
+  type AllAboutBand {
+    id: String!
+    name: String!
+    genres: [String!]!
+    active_years: [Int!]!
+    albums: [BandAlbum!]!
+    songs_hits: [BandSongHit!]!
+    members: [BandMember!]!
+    inserted_at: String
+    elasticsearch: Band
+    database: SQLBand
+  }
+
+  type SQLInstrumentSummary {
+    name: String!
+    Type: String!
+  }
+
+  type SQLArtistInstrumentSummary {
+    instrument: SQLInstrumentSummary!
+  }
+
+  type SQLArtistSummary {
+    name: String!
+    birthdate: String!
+    artistInstruments: [SQLArtistInstrumentSummary!]!
+  }
+
+  type SQLAlbumSummary {
+    title: String!
+    year: Int!
+    lengthMinutes: String!
+    albumSongs: [SQLAlbumSong!]!
+    albumArtists: [SQLAlbumArtistSummary!]!
+  }
+
+  type SQLAlbumArtistSummary {
+    artist: SQLArtistSummary!
+  }
+
+  type SQLBandSummary {
+    Id: Int!
+    es_id: String!
+    name: String!
+    origin: String!
+    officialWebsite: String!
+    rockAndRollHallOfFameInduction: Int
+    albums: [SQLAlbumSummary!]!
+    artists: [SQLArtistSummary!]!
+  }
+
+  type AllAboutBandSummary {
+    id: String!
+    name: String!
+    genres: [String!]!
+    active_years: [Int!]!
+    albums: [BandAlbum!]!
+    songs_hits: [BandSongHit!]!
+    members: [BandMember!]!
+    inserted_at: String
+    elasticsearch: Band
+    database: SQLBandSummary
+  }
+
   type Query {
     getBand(id: String!): Band
+    getAllAboutBandDebug(id: String!): AllAboutBand
+    getAllAboutBand(id: String!): AllAboutBandSummary
     searchBands(name: String!, limit: Int): [Band!]!
   }
 `;
