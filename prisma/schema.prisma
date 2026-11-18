@@ -55,6 +55,7 @@ model AlbumSong {
 
 model Artist {
   Id                Int                @id @default(autoincrement())
+  es_id             String             @default("")
   name              String
   birthdate         DateTime
   BandId            Int

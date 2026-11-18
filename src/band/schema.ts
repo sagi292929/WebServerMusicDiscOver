@@ -68,6 +68,7 @@ export const typeDefs = `#graphql
 
   type SQLArtist {
     Id: Int!
+    es_id: String!
     name: String!
     birthdate: String!
     BandId: Int!
@@ -131,6 +132,7 @@ export const typeDefs = `#graphql
   }
 
   type SQLArtistSummary {
+    es_id: String!
     name: String!
     birthdate: String!
     artistInstruments: [SQLArtistInstrumentSummary!]!

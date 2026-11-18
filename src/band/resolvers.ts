@@ -1,6 +1,7 @@
 import { elasticsearch } from "../elastic";
 import { config } from "../config";
 import { prisma } from "../database";
+import { ES_BAND_INDEX } from "./const";
 
 type BandSource = {
   id: string;
@@ -28,13 +29,13 @@ function toBand(source: BandSource) {
 
 async function fetchAllAboutBand(id: string) {
   const query = { term: { id } };
-  console.info("[Elasticsearch] Searching index:", config.elasticsearch.index, {
+  console.info("[Elasticsearch] Searching index:", ES_BAND_INDEX, {
     query,
   });
 
   const [result, databaseBand] = await Promise.all([
     elasticsearch.search({
-      index: config.elasticsearch.index,
+      index: ES_BAND_INDEX,
       size: 1,
       query,
     }),
@@ -106,12 +107,12 @@ export const bandResolvers = {
           },
         },
       };
-      console.info("[Elasticsearch] Searching index:", config.elasticsearch.index, {
+      console.info("[Elasticsearch] Searching index:", ES_BAND_INDEX, {
         query,
       });
 
       const result = await elasticsearch.search({
-        index: config.elasticsearch.index,
+        index: ES_BAND_INDEX,
         size: 100,
         query,
       });
@@ -136,12 +137,12 @@ export const bandResolvers = {
       { name, limit = 10 }: { name: string; limit?: number }
     ) => {
       const query = { match_phrase: { name } };
-      console.info("[Elasticsearch] Searching index:", config.elasticsearch.index, {
+      console.info("[Elasticsearch] Searching index:", ES_BAND_INDEX, {
         query,
       });
 
       const result = await elasticsearch.search({
-        index: config.elasticsearch.index,
+        index: ES_BAND_INDEX,
         size: limit,
         query,
       });

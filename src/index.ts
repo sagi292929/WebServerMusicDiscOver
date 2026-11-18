@@ -5,11 +5,16 @@ import { expressMiddleware } from "@as-integrations/express5";
 import cors from "cors";
 import { typeDefs } from "./band/schema";
 import { bandResolvers as resolvers } from "./band/resolvers";
+import { artistTypeDefs } from "./artist/schema";
+import { artistResolvers } from "./artist/resolvers";
 import { config } from "./config";
 
 async function startServer() {
   const app = express();
-  const server = new ApolloServer({ typeDefs, resolvers });
+  const server = new ApolloServer({
+    typeDefs: [typeDefs, artistTypeDefs],
+    resolvers: [resolvers, artistResolvers],
+  });
 
   await server.start();
 

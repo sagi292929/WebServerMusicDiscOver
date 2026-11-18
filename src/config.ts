@@ -5,7 +5,6 @@ export const config = {
     node: process.env.ELASTICSEARCH_NODE ?? "http://localhost:9200",
     username: process.env.ELASTICSEARCH_USERNAME || undefined,
     password: process.env.ELASTICSEARCH_PASSWORD || undefined,
-    index: process.env.ELASTICSEARCH_INDEX ?? "music_data_bands",
     searchableFields: ["name"],
   },
   googleApiKey: process.env.GOOGLE_API_KEY,
