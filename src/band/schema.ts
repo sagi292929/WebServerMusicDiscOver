@@ -40,6 +40,12 @@ export const typeDefs = `#graphql
     inserted_at: String
   }
 
+  type BandMatch {
+    id: String!
+    name: String!
+    active_years: [Int!]!
+  }
+
   type SQLSong {
     Id: Int!
     title: String!
@@ -167,7 +173,7 @@ export const typeDefs = `#graphql
   }
 
   type Query {
-    getBand(id: String!): Band
+    getBand(name: String!): [BandMatch!]!
     getAllAboutBandDebug(id: String!): AllAboutBand
     getAllAboutBand(id: String!): AllAboutBandSummary
     searchBands(name: String!, limit: Int): [Band!]!

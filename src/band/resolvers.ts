@@ -96,20 +96,34 @@ async function fetchAllAboutBand(id: string) {
 
 export const bandResolvers = {
   Query: {
-    getBand: async (_: unknown, { id }: { id: string }) => {
-      const query = { term: { id } };
+    getBand: async (_: unknown, { name }: { name: string }) => {
+      const escapedName = name.replace(/[\\*?]/g, "\\$&");
+      const query = {
+        wildcard: {
+          name: {
+            value: `*${escapedName}*`,
+            case_insensitive: true,
+          },
+        },
+      };
       console.info("[Elasticsearch] Searching index:", config.elasticsearch.index, {
         query,
       });
 
       const result = await elasticsearch.search({
         index: config.elasticsearch.index,
-        size: 1,
+        size: 100,
         query,
       });
 
-      const source = result.hits.hits[0]?._source as BandSource | undefined;
-      return source ? toBand(source) : null;
+      return result.hits.hits.map((hit) => {
+        const source = hit._source as BandSource;
+        return {
+          id: source.id,
+          name: source.name,
+          active_years: source.active_years ?? [],
+        };
+      });
     },
     getAllAboutBandDebug: async (_: unknown, { id }: { id: string }) => {
       return fetchAllAboutBand(id);
