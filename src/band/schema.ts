@@ -70,7 +70,7 @@ export const typeDefs = `#graphql
     Id: Int!
     es_id: String!
     name: String!
-    birthdate: String!
+    birthdate: String
     BandId: Int!
     artistInstruments: [SQLArtistInstrument!]!
   }
@@ -134,7 +134,7 @@ export const typeDefs = `#graphql
   type SQLArtistSummary {
     es_id: String!
     name: String!
-    birthdate: String!
+    birthdate: String
     artistInstruments: [SQLArtistInstrumentSummary!]!
   }
 
@@ -174,10 +174,21 @@ export const typeDefs = `#graphql
     database: SQLBandSummary
   }
 
+  type SQLGenre {
+    Id: Int!
+    name: String!
+    main_genre: String
+  }
+
+  type MainGenreGroup {
+    main_genre: String
+    genres: [SQLGenre!]!
+  }
+
   type Query {
     getBand(name: String!): [BandMatch!]!
-    getAllAboutBandDebug(id: String!): AllAboutBand
     getAllAboutBand(id: String!): AllAboutBandSummary
     searchBands(name: String!, limit: Int): [Band!]!
+    getGenre: [MainGenreGroup!]!
   }
 `;

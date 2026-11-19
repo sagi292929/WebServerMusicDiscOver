@@ -1,5 +1,4 @@
 import { elasticsearch } from "../elastic";
-import { config } from "../config";
 import { prisma } from "../database";
 import { ES_BAND_INDEX } from "./const";
 
@@ -14,6 +13,38 @@ type BandSource = {
   inserted_at?: string;
 };
 
+function isBandSource(source: unknown): source is BandSource {
+  if (typeof source !== "object" || source === null || Array.isArray(source)) {
+    return false;
+  }
+
+  const record = source as Record<string, unknown>;
+  return (
+    typeof record.id === "string" &&
+    typeof record.name === "string" &&
+    (record.genres === undefined ||
+      (Array.isArray(record.genres) &&
+        record.genres.every((genre) => typeof genre === "string"))) &&
+    (record.active_years === undefined ||
+      (Array.isArray(record.active_years) &&
+        record.active_years.every(
+          (year) => typeof year === "number" && Number.isFinite(year)
+        ))) &&
+    (record.albums === undefined || Array.isArray(record.albums)) &&
+    (record.songs_hits === undefined || Array.isArray(record.songs_hits)) &&
+    (record.members === undefined || Array.isArray(record.members)) &&
+    (record.inserted_at === undefined ||
+      typeof record.inserted_at === "string")
+  );
+}
+
+function warnMalformedBand(hit: { _id?: string }) {
+  console.warn("[Elasticsearch] Skipping malformed band document", {
+    index: ES_BAND_INDEX,
+    documentId: hit._id,
+  });
+}
+
 function toBand(source: BandSource) {
   return {
     id: source.id,
@@ -25,6 +56,12 @@ function toBand(source: BandSource) {
     members: source.members ?? [],
     inserted_at: source.inserted_at,
   };
+}
+
+function formatBirthdate(artist: { birthdate?: Date | string | null }) {
+  return artist.birthdate instanceof Date
+    ? artist.birthdate.toISOString()
+    : artist.birthdate ?? null;
 }
 
 async function fetchAllAboutBand(id: string) {
@@ -65,12 +102,18 @@ async function fetchAllAboutBand(id: string) {
     }),
   ]);
 
-  const source = result.hits.hits[0]?._source as BandSource | undefined;
-  if (!source && !databaseBand) {
+  const hit = result.hits.hits[0];
+  const source = hit?._source;
+  const validSource = isBandSource(source) ? source : undefined;
+  if (hit && !validSource) {
+    warnMalformedBand(hit);
+  }
+
+  if (!validSource && !databaseBand) {
     return null;
   }
 
-  const elasticBand = source ? toBand(source) : null;
+  const elasticBand = validSource ? toBand(validSource) : null;
   const databaseFallback = databaseBand
     ? {
         id: databaseBand.es_id,
@@ -97,13 +140,45 @@ async function fetchAllAboutBand(id: string) {
 
 export const bandResolvers = {
   Query: {
+    getGenre: async () => {
+      const genres = await prisma.genre.findMany({
+        select: {
+          Id: true,
+          name: true,
+          mainGenre: true,
+        },
+        orderBy: [{ mainGenre: "asc" }, { name: "asc" }],
+      });
+
+      const groups = new Map<
+        string | null,
+        { Id: number; name: string; main_genre: string | null }[]
+      >();
+      for (const genre of genres) {
+        const group = groups.get(genre.mainGenre) ?? [];
+        group.push({
+          Id: genre.Id,
+          name: genre.name,
+          main_genre: genre.mainGenre,
+        });
+        groups.set(genre.mainGenre, group);
+      }
+
+      return Array.from(groups, ([main_genre, genres]) => ({
+        main_genre,
+        genres,
+      }));
+    },
     getBand: async (_: unknown, { name }: { name: string }) => {
-      const escapedName = name.replace(/[\\*?]/g, "\\$&");
+      const trimmedName = name.trim();
+      if (!trimmedName) {
+        return [];
+      }
+
       const query = {
-        wildcard: {
+        match_phrase_prefix: {
           name: {
-            value: `*${escapedName}*`,
-            case_insensitive: true,
+            query: trimmedName,
           },
         },
       };
@@ -117,17 +192,20 @@ export const bandResolvers = {
         query,
       });
 
-      return result.hits.hits.map((hit) => {
-        const source = hit._source as BandSource;
-        return {
-          id: source.id,
-          name: source.name,
-          active_years: source.active_years ?? [],
-        };
+      return result.hits.hits.flatMap((hit) => {
+        if (!isBandSource(hit._source)) {
+          warnMalformedBand(hit);
+          return [];
+        }
+
+        return [
+          {
+            id: hit._source.id,
+            name: hit._source.name,
+            active_years: hit._source.active_years ?? [],
+          },
+        ];
       });
-    },
-    getAllAboutBandDebug: async (_: unknown, { id }: { id: string }) => {
-      return fetchAllAboutBand(id);
     },
     getAllAboutBand: async (_: unknown, { id }: { id: string }) => {
       return fetchAllAboutBand(id);
@@ -147,15 +225,20 @@ export const bandResolvers = {
         query,
       });
 
-      return result.hits.hits.map((hit) =>
-        toBand(hit._source as BandSource)
-      );
+      return result.hits.hits.flatMap((hit) => {
+        if (!isBandSource(hit._source)) {
+          warnMalformedBand(hit);
+          return [];
+        }
+
+        return [toBand(hit._source)];
+      });
     },
   },
   SQLArtist: {
-    birthdate: (artist: { birthdate: Date }) => artist.birthdate.toISOString(),
+    birthdate: formatBirthdate,
   },
   SQLArtistSummary: {
-    birthdate: (artist: { birthdate: Date }) => artist.birthdate.toISOString(),
+    birthdate: formatBirthdate,
   },
 };

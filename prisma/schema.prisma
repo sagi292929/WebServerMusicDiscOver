@@ -19,7 +19,7 @@ model Band {
   rockAndRollHallOfFameInduction Int?
   albums                         Album[]
   artists                        Artist[]
-  bandGeneres                    BandGenere[]
+  bandGenres                     BandGenre[]
 }
 
 model Album {
@@ -81,20 +81,21 @@ model Instrument {
   artistInstruments ArtistInstrument[]
 }
 
-model Genere {
-  Id          Int          @id @default(autoincrement())
-  name        String
-  bandGeneres BandGenere[]
+model Genre {
+  Id         Int         @id @default(autoincrement())
+  name       String
+  mainGenre  String?     @map("main_genre")
+  bandGenres BandGenre[]
 }
 
-model BandGenere {
-  bandId   Int     @map("band_id")
-  genereId Int     @map("genere_id")
-  band     Band    @relation(fields: [bandId], references: [Id], onDelete: Cascade)
-  genere   Genere  @relation(fields: [genereId], references: [Id], onDelete: Cascade)
+model BandGenre {
+  bandId  Int    @map("band_id")
+  genreId Int    @map("genre_id")
+  band    Band   @relation(fields: [bandId], references: [Id], onDelete: Cascade)
+  genre   Genre  @relation(fields: [genreId], references: [Id], onDelete: Cascade)
 
-  @@id([bandId, genereId])
-  @@map("band_genere")
+  @@id([bandId, genreId])
+  @@map("band_genre")
 }
 
 model ArtistInstrument {
