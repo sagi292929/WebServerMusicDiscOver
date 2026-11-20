@@ -79,6 +79,13 @@ async function fetchAllAboutBand(id: string) {
     prisma.band.findFirst({
       where: { es_id: id },
       include: {
+        bandGenres: {
+          include: {
+            genre: {
+              select: { name: true },
+            },
+          },
+        },
         albums: {
           include: {
             albumSongs: { include: { song: true } },
@@ -114,11 +121,17 @@ async function fetchAllAboutBand(id: string) {
   }
 
   const elasticBand = validSource ? toBand(validSource) : null;
+  const genres = Array.from(
+    new Set(databaseBand?.bandGenres.map(({ genre }) => genre.name) ?? [])
+  ).sort((a, b) => a.localeCompare(b));
+  if (elasticBand) {
+    elasticBand.genres = genres;
+  }
   const databaseFallback = databaseBand
     ? {
         id: databaseBand.es_id,
         name: databaseBand.name,
-        genres: [],
+        genres,
         active_years: [],
         albums: [],
         songs_hits: [],
@@ -133,6 +146,7 @@ async function fetchAllAboutBand(id: string) {
 
   return {
     ...band,
+    genres,
     elasticsearch: elasticBand,
     database: databaseBand,
   };
