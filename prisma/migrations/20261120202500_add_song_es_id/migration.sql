@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Song" ADD COLUMN "es_id" TEXT NOT NULL DEFAULT '';

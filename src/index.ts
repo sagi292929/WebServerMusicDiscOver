@@ -7,13 +7,17 @@ import { typeDefs } from "./band/schema";
 import { bandResolvers as resolvers } from "./band/resolvers";
 import { artistTypeDefs } from "./artist/schema";
 import { artistResolvers } from "./artist/resolvers";
+import { albumTypeDefs } from "./album/schema";
+import { albumResolvers } from "./album/resolvers";
+import { songTypeDefs } from "./song/schema";
+import { songResolvers } from "./song/resolvers";
 import { config } from "./config";
 
 async function startServer() {
   const app = express();
   const server = new ApolloServer({
-    typeDefs: [typeDefs, artistTypeDefs],
-    resolvers: [resolvers, artistResolvers],
+    typeDefs: [typeDefs, artistTypeDefs, albumTypeDefs, songTypeDefs],
+    resolvers: [resolvers, artistResolvers, albumResolvers, songResolvers],
   });
 
   await server.start();

@@ -35,6 +35,7 @@ model Album {
 
 model Song {
   Id          Int         @id @default(autoincrement())
+  es_id       String      @default("")
   title       String
   year        Int
   achievement String
