@@ -154,8 +154,10 @@ async function fetchAllAboutBand(id: string) {
 
 export const bandResolvers = {
   Query: {
-    getGenre: async () => {
+    getGenre: async (_: unknown, { name }: { name?: string } = {}) => {
+      const nameFilter = name?.trim();
       const genres = await prisma.genre.findMany({
+        where: nameFilter ? { name: { contains: nameFilter } } : undefined,
         select: {
           Id: true,
           name: true,
@@ -164,11 +166,26 @@ export const bandResolvers = {
         orderBy: [{ mainGenre: "asc" }, { name: "asc" }],
       });
 
+      const searchTerm = nameFilter?.toLowerCase();
+      const sortedGenres = searchTerm
+        ? genres.sort((left, right) => {
+            const leftPosition = left.name.toLowerCase().indexOf(searchTerm);
+            const rightPosition = right.name.toLowerCase().indexOf(searchTerm);
+
+            return (
+              leftPosition - rightPosition ||
+              left.name.localeCompare(right.name) ||
+              (left.mainGenre ?? "").localeCompare(right.mainGenre ?? "") ||
+              left.Id - right.Id
+            );
+          })
+        : genres;
+
       const groups = new Map<
         string | null,
         { Id: number; name: string; main_genre: string | null }[]
       >();
-      for (const genre of genres) {
+      for (const genre of sortedGenres) {
         const group = groups.get(genre.mainGenre) ?? [];
         group.push({
           Id: genre.Id,
@@ -223,6 +240,42 @@ export const bandResolvers = {
     },
     getAllAboutBand: async (_: unknown, { id }: { id: string }) => {
       return fetchAllAboutBand(id);
+    },
+    getAllAboutGenre: async (_: unknown, { id }: { id: number }) => {
+      const genre = await prisma.genre.findUnique({
+        where: { Id: id },
+        select: {
+          Id: true,
+          name: true,
+          mainGenre: true,
+          bandGenres: {
+            select: {
+              band: {
+                select: {
+                  Id: true,
+                  es_id: true,
+                  name: true,
+                  origin: true,
+                  officialWebsite: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!genre) {
+        return null;
+      }
+
+      return {
+        Id: genre.Id,
+        name: genre.name,
+        main_genre: genre.mainGenre,
+        bands: genre.bandGenres
+          .map(({ band }) => band)
+          .sort((left, right) => left.name.localeCompare(right.name)),
+      };
     },
     searchBands: async (
       _: unknown,

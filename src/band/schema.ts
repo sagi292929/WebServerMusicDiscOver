@@ -185,10 +185,26 @@ export const typeDefs = `#graphql
     genres: [SQLGenre!]!
   }
 
+  type SQLGenreBand {
+    Id: Int!
+    es_id: String!
+    name: String!
+    origin: String!
+    officialWebsite: String!
+  }
+
+  type AllAboutGenre {
+    Id: Int!
+    name: String!
+    main_genre: String
+    bands: [SQLGenreBand!]!
+  }
+
   type Query {
     getBand(name: String!): [BandMatch!]!
     getAllAboutBand(id: String!): AllAboutBandSummary
+    getAllAboutGenre(id: Int!): AllAboutGenre
     searchBands(name: String!, limit: Int): [Band!]!
-    getGenre: [MainGenreGroup!]!
+    getGenre(name: String): [MainGenreGroup!]!
   }
 `;
