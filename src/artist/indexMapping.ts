@@ -1,4 +1,4 @@
-export const artistIndexMappling = {
+export const indexMapping = {
   mappings: {
     properties: {
       es_id: { type: "keyword" },

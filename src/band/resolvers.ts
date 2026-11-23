@@ -1,5 +1,10 @@
 import { elasticsearch } from "../elastic";
 import { prisma } from "../database";
+import {
+  formatBirthday,
+  normalizeSearchText,
+  trimSearchInput,
+} from "../shared/formatting";
 import { ES_BAND_INDEX } from "./const";
 
 type BandSource = {
@@ -56,12 +61,6 @@ function toBand(source: BandSource) {
     members: source.members ?? [],
     inserted_at: source.inserted_at,
   };
-}
-
-function formatBirthdate(artist: { birthdate?: Date | string | null }) {
-  return artist.birthdate instanceof Date
-    ? artist.birthdate.toISOString()
-    : artist.birthdate ?? null;
 }
 
 async function fetchAllAboutBand(id: string) {
@@ -155,7 +154,7 @@ async function fetchAllAboutBand(id: string) {
 export const bandResolvers = {
   Query: {
     getGenre: async (_: unknown, { name }: { name?: string } = {}) => {
-      const nameFilter = name?.trim();
+      const nameFilter = trimSearchInput(name);
       const genres = await prisma.genre.findMany({
         where: nameFilter ? { name: { contains: nameFilter } } : undefined,
         select: {
@@ -166,11 +165,17 @@ export const bandResolvers = {
         orderBy: [{ mainGenre: "asc" }, { name: "asc" }],
       });
 
-      const searchTerm = nameFilter?.toLowerCase();
+      const searchTerm = nameFilter
+        ? normalizeSearchText(nameFilter)
+        : undefined;
       const sortedGenres = searchTerm
         ? genres.sort((left, right) => {
-            const leftPosition = left.name.toLowerCase().indexOf(searchTerm);
-            const rightPosition = right.name.toLowerCase().indexOf(searchTerm);
+            const leftPosition = normalizeSearchText(left.name).indexOf(
+              searchTerm
+            );
+            const rightPosition = normalizeSearchText(right.name).indexOf(
+              searchTerm
+            );
 
             return (
               leftPosition - rightPosition ||
@@ -201,7 +206,7 @@ export const bandResolvers = {
       }));
     },
     getBand: async (_: unknown, { name }: { name: string }) => {
-      const trimmedName = name.trim();
+      const trimmedName = trimSearchInput(name);
       if (!trimmedName) {
         return [];
       }
@@ -303,9 +308,11 @@ export const bandResolvers = {
     },
   },
   SQLArtist: {
-    birthdate: formatBirthdate,
+    birthdate: (artist: { birthdate?: Date | string | null }) =>
+      formatBirthday(artist.birthdate),
   },
   SQLArtistSummary: {
-    birthdate: formatBirthdate,
+    birthdate: (artist: { birthdate?: Date | string | null }) =>
+      formatBirthday(artist.birthdate),
   },
 };

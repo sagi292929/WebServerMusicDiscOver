@@ -1,5 +1,9 @@
 import { elasticsearch } from "../elastic";
 import { prisma } from "../database";
+import {
+  escapeWildcardSearchInput,
+  formatBirthday,
+} from "../shared/formatting";
 import { ES_ARTIST_INDEX } from "./const";
 
 type ArtistSource = {
@@ -10,7 +14,7 @@ type ArtistSource = {
 };
 
 async function findArtists(name: string, limit: number): Promise<ArtistSource[]> {
-  const escapedName = name.replace(/[\\*?]/g, "\\$&");
+  const escapedName = escapeWildcardSearchInput(name);
   const query = {
     wildcard: {
       name: {
@@ -99,6 +103,7 @@ export const artistResolvers = {
     },
   },
   ArtistDatabaseDetails: {
-    birthdate: (artist: { birthdate: Date }) => artist.birthdate.toISOString(),
+    birthdate: (artist: { birthdate: Date }) =>
+      formatBirthday(artist.birthdate),
   },
 };

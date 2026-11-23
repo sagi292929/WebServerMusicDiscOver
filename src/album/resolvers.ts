@@ -1,13 +1,17 @@
 import { prisma } from "../database";
+import {
+  normalizeSearchText,
+  trimSearchInput,
+} from "../shared/formatting";
 
 export const albumResolvers = {
   Query: {
     getAlbum: async (_: unknown, { name }: { name: string }) => {
-      const trimmedName = name.trim();
+      const trimmedName = trimSearchInput(name);
       if (!trimmedName) {
         return [];
       }
-      const searchTerm = trimmedName.toLowerCase();
+      const searchTerm = normalizeSearchText(trimmedName);
 
       const albums = await prisma.album.findMany({
         where: {
@@ -31,8 +35,12 @@ export const albumResolvers = {
 
       return albums
         .sort((left, right) => {
-          const leftPosition = left.title.toLowerCase().indexOf(searchTerm);
-          const rightPosition = right.title.toLowerCase().indexOf(searchTerm);
+          const leftPosition = normalizeSearchText(left.title).indexOf(
+            searchTerm
+          );
+          const rightPosition = normalizeSearchText(right.title).indexOf(
+            searchTerm
+          );
 
           return (
             leftPosition - rightPosition ||

@@ -1,6 +1,11 @@
 import { elasticsearch } from "../elastic";
 import { prisma } from "../database";
 import { GraphQLScalarType, valueFromASTUntyped } from "graphql";
+import {
+  escapeWildcardSearchInput,
+  normalizeSearchText,
+  trimSearchInput,
+} from "../shared/formatting";
 import { ES_SONG_INDEX } from "./const";
 
 const jsonScalar = new GraphQLScalarType({
@@ -33,13 +38,13 @@ export const songResolvers = {
   JSON: jsonScalar,
   Query: {
     getSong: async (_: unknown, { name }: { name: string }) => {
-      const trimmedName = name.trim();
+      const trimmedName = trimSearchInput(name);
       if (!trimmedName) {
         return [];
       }
-      const searchTerm = trimmedName.toLowerCase();
+      const searchTerm = normalizeSearchText(trimmedName);
 
-      const escapedName = trimmedName.replace(/[\\*?]/g, "\\$&");
+      const escapedName = escapeWildcardSearchInput(trimmedName);
       const query = {
         bool: {
           should: [
@@ -95,8 +100,12 @@ export const songResolvers = {
           database_id: databaseIds.get(match.es_id) ?? null,
         }))
         .sort((left, right) => {
-          const leftPosition = left.name.toLowerCase().indexOf(searchTerm);
-          const rightPosition = right.name.toLowerCase().indexOf(searchTerm);
+          const leftPosition = normalizeSearchText(left.name).indexOf(
+            searchTerm
+          );
+          const rightPosition = normalizeSearchText(right.name).indexOf(
+            searchTerm
+          );
 
           return (
             leftPosition - rightPosition ||
