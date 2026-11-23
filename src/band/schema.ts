@@ -48,6 +48,7 @@ export const typeDefs = `#graphql
 
   type SQLSong {
     Id: Int!
+    es_id: String!
     title: String!
     year: Int!
     achievement: String!
