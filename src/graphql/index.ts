@@ -6,12 +6,15 @@ import { albumTypeDefs } from "../album/schema";
 import { albumResolvers } from "../album/resolvers";
 import { songTypeDefs } from "../song/schema";
 import { songResolvers } from "../song/resolvers";
+import { userTypeDefs } from "../user/schema";
+import { userResolvers } from "../user/resolvers";
 
 export const typeDefs = [
   bandTypeDefs,
   artistTypeDefs,
   albumTypeDefs,
   songTypeDefs,
+  userTypeDefs,
 ];
 
 export const resolvers = [
@@ -19,4 +22,5 @@ export const resolvers = [
   artistResolvers,
   albumResolvers,
   songResolvers,
+  userResolvers,
 ];

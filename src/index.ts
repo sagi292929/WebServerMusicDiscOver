@@ -5,6 +5,7 @@ import { expressMiddleware } from "@as-integrations/express5";
 import cors from "cors";
 import { resolvers, typeDefs } from "./graphql";
 import { config } from "./config";
+import { getRequestUser } from "./user/auth";
 
 async function startServer() {
   const app = express();
@@ -19,7 +20,11 @@ async function startServer() {
     "/graphql",
     cors<cors.CorsRequest>(),
     express.json(),
-    expressMiddleware(server)
+    expressMiddleware(server, {
+      context: async ({ req }) => ({
+        user: getRequestUser(req.headers.authorization),
+      }),
+    })
   );
 
   app.listen(config.port, () => {

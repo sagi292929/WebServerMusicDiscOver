@@ -108,3 +108,10 @@ model ArtistInstrument {
   @@id([artistId, instrumentId])
   @@map("artist_instruments")
 }
+
+model User {
+  Id       Int    @id @default(autoincrement())
+  name     String
+  password String
+  role     String
+}
