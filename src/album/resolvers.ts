@@ -1,8 +1,77 @@
 import { prisma } from "../database";
+import { elasticsearch } from "../elastic";
 import {
+  escapeWildcardSearchInput,
   normalizeSearchText,
   trimSearchInput,
 } from "../shared/formatting";
+import { ES_ALBUM_INDEX } from "./const";
+
+type AlbumSource = {
+  es_id: string;
+  name: string;
+  band: string;
+};
+
+function isAlbumSource(source: unknown): source is AlbumSource &
+  Record<string, unknown> {
+  if (typeof source !== "object" || source === null || Array.isArray(source)) {
+    return false;
+  }
+
+  const record = source as Record<string, unknown>;
+  return (
+    typeof record.es_id === "string" &&
+    typeof record.name === "string" &&
+    typeof record.band === "string"
+  );
+}
+
+async function fetchAllAboutAlbum(id: string) {
+  const query = { ids: { values: [id] } };
+  console.info("[Elasticsearch] Searching index:", ES_ALBUM_INDEX, {
+    query,
+  });
+
+  const result = await elasticsearch.search({
+    index: ES_ALBUM_INDEX,
+    size: 1,
+    query,
+  });
+  const hit = result.hits.hits[0];
+  const source = hit?._source;
+
+  if (!hit) {
+    return null;
+  }
+  if (!isAlbumSource(source)) {
+    console.warn("[Elasticsearch] Skipping malformed album document", {
+      index: ES_ALBUM_INDEX,
+      documentId: hit._id,
+    });
+    return null;
+  }
+
+  const databaseAlbum = await prisma.album.findFirst({
+    where: {
+      title: source.name,
+      band: { is: { name: source.band } },
+    },
+    select: {
+      Id: true,
+      BandId: true,
+      albumSongs: {
+        include: { song: true },
+      },
+    },
+  });
+
+  return {
+    id,
+    elasticsearch: source,
+    database: databaseAlbum,
+  };
+}
 
 export const albumResolvers = {
   Query: {
@@ -12,47 +81,68 @@ export const albumResolvers = {
         return [];
       }
       const searchTerm = normalizeSearchText(trimmedName);
-
-      const albums = await prisma.album.findMany({
-        where: {
-          title: {
-            contains: trimmedName,
-          },
-        },
-        select: {
-          Id: true,
-          title: true,
-          year: true,
-          lengthMinutes: true,
-          band: {
-            select: {
-              name: true,
+      const escapedName = escapeWildcardSearchInput(trimmedName);
+      const query = {
+        bool: {
+          should: [
+            { match_phrase: { name: trimmedName } },
+            {
+              wildcard: {
+                name: {
+                  value: `*${escapedName}*`,
+                  case_insensitive: true,
+                },
+              },
             },
-          },
+          ],
+          minimum_should_match: 1,
         },
-        orderBy: [{ title: "asc" }, { year: "asc" }],
+      };
+      console.info("[Elasticsearch] Searching index:", ES_ALBUM_INDEX, {
+        query,
       });
 
-      return albums
+      const result = await elasticsearch.search({
+        index: ES_ALBUM_INDEX,
+        size: 100,
+        query,
+      });
+
+      return result.hits.hits
+        .flatMap((hit) => {
+          if (!isAlbumSource(hit._source)) {
+            console.warn("[Elasticsearch] Skipping malformed album document", {
+              index: ES_ALBUM_INDEX,
+              documentId: hit._id,
+            });
+            return [];
+          }
+
+          return [
+            {
+              es_id: hit._source.es_id,
+              name: hit._source.name,
+              band_name: hit._source.band,
+            },
+          ];
+        })
         .sort((left, right) => {
-          const leftPosition = normalizeSearchText(left.title).indexOf(
+          const leftPosition = normalizeSearchText(left.name).indexOf(
             searchTerm
           );
-          const rightPosition = normalizeSearchText(right.title).indexOf(
+          const rightPosition = normalizeSearchText(right.name).indexOf(
             searchTerm
           );
 
           return (
             leftPosition - rightPosition ||
-            left.title.localeCompare(right.title) ||
-            left.year - right.year ||
-            left.Id - right.Id
+            left.name.localeCompare(right.name) ||
+            left.band_name.localeCompare(right.band_name) ||
+            left.es_id.localeCompare(right.es_id)
           );
-        })
-        .map(({ band, ...album }) => ({
-          ...album,
-          bandName: band.name,
-        }));
+        });
     },
+    getAllAboutAlbum: async (_: unknown, { id }: { id: string }) =>
+      fetchAllAboutAlbum(id),
   },
 };
