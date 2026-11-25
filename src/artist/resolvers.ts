@@ -42,11 +42,24 @@ export const artistResolvers = {
       _: unknown,
       { name, limit = 100 }: { name: string; limit?: number }
     ) => {
-      return (await findArtists(name, limit)).map((source) => ({
+      const artists = await findArtists(name, limit);
+      const databaseArtists = await prisma.artist.findMany({
+        where: {
+          es_id: {
+            in: artists.map(({ es_id }) => es_id),
+          },
+        },
+        include: { band: { select: { name: true } } },
+      });
+      const bandNames = new Map(
+        databaseArtists.map((artist) => [artist.es_id, artist.band.name])
+      );
+
+      return artists.map((source) => ({
         es_id: source.es_id,
         name: source.name,
+        band_name: bandNames.get(source.es_id) ?? "",
         born_in: source.born_in,
-        former_bands: source.former_bands ?? [],
       }));
     },
     getAllAboutArtist: async (
@@ -54,6 +67,7 @@ export const artistResolvers = {
       { name, limit = 100 }: { name: string; limit?: number }
     ) => {
       const artists = await findArtists(name, limit);
+
       return Promise.all(
         artists.map(async (source) => {
           const databaseArtist = await prisma.artist.findFirst({
@@ -61,40 +75,21 @@ export const artistResolvers = {
             include: {
               band: true,
               artistInstruments: { include: { instrument: true } },
-              albumArtists: {
-                include: {
-                  album: {
-                    include: {
-                      albumSongs: { include: { song: true } },
-                    },
-                  },
-                },
-              },
             },
           });
 
           return {
-            ...source,
+            es_id: source.es_id,
+            name: source.name,
+            born_in: source.born_in,
             former_bands: source.former_bands ?? [],
-            elasticsearch: {
-              ...source,
-              former_bands: source.former_bands ?? [],
-            },
             database: databaseArtist
               ? {
-                  ...databaseArtist,
+                  birthdate: databaseArtist.birthdate,
+                  band: databaseArtist.band,
                   instruments: databaseArtist.artistInstruments.map(
                     ({ instrument }) => instrument
                   ),
-                  albums: databaseArtist.albumArtists.map((appearance) => ({
-                    albumId: appearance.albumId,
-                    album: {
-                      ...appearance.album,
-                      songs: appearance.album.albumSongs.map(
-                        ({ song }) => song
-                      ),
-                    },
-                  })),
                 }
               : null,
           };
@@ -103,7 +98,7 @@ export const artistResolvers = {
     },
   },
   ArtistDatabaseDetails: {
-    birthdate: (artist: { birthdate: Date }) =>
+    birthdate: (artist: { birthdate: Date | null }) =>
       formatBirthday(artist.birthdate),
   },
 };

@@ -52,6 +52,12 @@ async function fetchAllAboutAlbum(id: string) {
     return null;
   }
 
+  const {
+    length_seconds: _lengthSeconds,
+    lengthSeconds: _lengthSecondsCamel,
+    ...albumDetails
+  } = source as AlbumSource & Record<string, unknown>;
+
   const databaseAlbum = await prisma.album.findFirst({
     where: {
       title: source.name,
@@ -69,7 +75,7 @@ async function fetchAllAboutAlbum(id: string) {
 
   return {
     id,
-    elasticsearch: source,
+    elasticsearch: albumDetails,
     database: databaseAlbum,
   };
 }
