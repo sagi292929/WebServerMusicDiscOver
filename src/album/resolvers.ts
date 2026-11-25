@@ -62,6 +62,7 @@ async function fetchAllAboutAlbum(id: string) {
       BandId: true,
       albumSongs: {
         include: { song: true },
+        orderBy: { trackNumber: "asc" },
       },
     },
   });
